@@ -21,8 +21,10 @@ ml-service/__pycache__
 *.py[cod]
 
 ml-service/models/*.keras
+ml-service/models/*.h5
 !ml-service/models/.gitkeep
 !ml-service/models/best_alzheimers_model.keras
+!ml-service/models/MRI.h5
 
 # Editor directories and files
 .vscode/*

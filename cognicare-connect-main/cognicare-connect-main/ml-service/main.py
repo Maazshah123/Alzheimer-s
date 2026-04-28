@@ -1,4 +1,4 @@
-"""Alzheimer's image classifier API. Model: ml-service/models/best_alzheimers_model.keras or MODEL_PATH."""
+"""Dual-model API: CWT (.keras) at POST /predict, MRI (.h5) at POST /predict/mri — separate files, weights, and endpoints."""
 from __future__ import annotations
 
 import io
@@ -22,6 +22,7 @@ def _api_error_detail(msg: object, limit: int = 280) -> str:
         return s
     return f"{s[: limit - 1]}…"
 
+# CWT / primary classifier (e.g. best_alzheimers_model.keras)
 MODEL_PATH = os.environ.get(
     "MODEL_PATH",
     str(Path(__file__).resolve().parent / "models" / "best_alzheimers_model.keras"),
@@ -30,6 +31,15 @@ CLASS_LABELS_ENV = os.environ.get("CLASS_LABELS", "")
 HF_REPO_ID = os.environ.get("HF_REPO_ID", "")
 HF_FILENAME = os.environ.get("HF_FILENAME", "best_alzheimers_model.keras")
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
+
+# MRI classifier (SavedModel / HDF5 .h5)
+MRI_MODEL_PATH = os.environ.get(
+    "MRI_MODEL_PATH",
+    str(Path(__file__).resolve().parent / "models" / "MRI.h5"),
+)
+MRI_CLASS_LABELS_ENV = os.environ.get("MRI_CLASS_LABELS", "")
+HF_REPO_ID_MRI = os.environ.get("HF_REPO_ID_MRI", "")
+HF_FILENAME_MRI = os.environ.get("HF_FILENAME_MRI", "MRI.h5")
 
 app = FastAPI(title="CogniPredict ML", version="1.0.0")
 app.add_middleware(
@@ -40,35 +50,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_model = None
+_model: Any = None
 _model_error: str | None = None
+_model_mri: Any = None
+_model_mri_error: str | None = None
 
 
-def _load_model() -> None:
-    global _model, _model_error
-    path = Path(MODEL_PATH)
-    if not path.is_file() and HF_REPO_ID.strip():
+def _load_one_model(
+    path_str: str,
+    hf_repo: str,
+    hf_filename: str,
+    token: str | None,
+    missing_hint: str,
+) -> tuple[Any | None, str | None]:
+    path = Path(path_str)
+    if not path.is_file() and hf_repo.strip():
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             downloaded = hf_hub_download(
-                repo_id=HF_REPO_ID.strip(),
-                filename=HF_FILENAME,
-                token=HF_TOKEN or None,
+                repo_id=hf_repo.strip(),
+                filename=hf_filename,
+                token=token or None,
             )
             path = Path(downloaded)
-            logger.info("Downloaded model from Hugging Face: %s/%s", HF_REPO_ID, HF_FILENAME)
+            logger.info("Downloaded model from Hugging Face: %s/%s", hf_repo, hf_filename)
         except Exception as e:  # noqa: BLE001
-            _model_error = _api_error_detail(
-                f"Model download failed from Hugging Face repo '{HF_REPO_ID}' file '{HF_FILENAME}': {e}"
+            return None, _api_error_detail(
+                f"Model download failed from Hugging Face repo '{hf_repo}' file '{hf_filename}': {e}"
             )
-            return
 
     if not path.is_file():
-        _model_error = (
-            f"Model file not found at {path}. Set HF_REPO_ID/HF_FILENAME to download from Hugging Face, "
-            "or copy best_alzheimers_model.keras into ml-service/models/."
-        )
-        return
+        return None, _api_error_detail(f"Model file not found at {path}. {missing_hint}")
+
     try:
         import tensorflow as tf
 
@@ -76,24 +89,46 @@ def _load_model() -> None:
             tf.config.set_visible_devices([], "GPU")
         except Exception:
             pass
-        _model = tf.keras.models.load_model(path, compile=False)
-        _model_error = None
+        m = tf.keras.models.load_model(path, compile=False)
+        return m, None
     except Exception as e:  # noqa: BLE001
-        logger.exception("Model load failed")
-        _model = None
+        logger.exception("Model load failed for %s", path)
         raw = str(e)
         low = raw.lower()
         if "quantization_config" in low or "unrecognized keyword" in low:
             raw = (
-                "This .keras needs a newer TensorFlow (try: pip install -U 'tensorflow>=2.17'). "
+                "This model needs a newer TensorFlow (try: pip install -U 'tensorflow>=2.17'). "
                 f"Detail: {raw[:200]}"
             )
-        _model_error = _api_error_detail(raw)
+        return None, _api_error_detail(raw)
+
+
+def _load_model() -> None:
+    global _model, _model_error
+    _model, _model_error = _load_one_model(
+        MODEL_PATH,
+        HF_REPO_ID,
+        HF_FILENAME,
+        HF_TOKEN or None,
+        "Set HF_REPO_ID/HF_FILENAME or add best_alzheimers_model.keras under ml-service/models/.",
+    )
+
+
+def _load_model_mri() -> None:
+    global _model_mri, _model_mri_error
+    _model_mri, _model_mri_error = _load_one_model(
+        MRI_MODEL_PATH,
+        HF_REPO_ID_MRI,
+        HF_FILENAME_MRI,
+        HF_TOKEN or None,
+        "Set HF_REPO_ID_MRI/HF_FILENAME_MRI or add MRI.h5 under ml-service/models/.",
+    )
 
 
 @app.on_event("startup")
 def startup() -> None:
     _load_model()
+    _load_model_mri()
 
 
 def _reload_model_if_unloaded() -> None:
@@ -102,13 +137,20 @@ def _reload_model_if_unloaded() -> None:
     _load_model()
 
 
+def _reload_mri_if_unloaded() -> None:
+    if _model_mri is not None:
+        return
+    _load_model_mri()
+
+
 @app.get("/")
 def root() -> dict[str, Any]:
     return {
         "service": "CogniPredict ML API",
         "docs": "/docs",
         "health": "GET /health",
-        "predict": "POST /predict (multipart field: file)",
+        "predict_cwt": "POST /predict (CWT — multipart field: file)",
+        "predict_mri": "POST /predict/mri (MRI — multipart field: file)",
     }
 
 
@@ -122,9 +164,9 @@ def _default_labels(n: int) -> list[str]:
     return [f"Class {i}" for i in range(n)]
 
 
-def _labels_for(n: int) -> list[str]:
-    if CLASS_LABELS_ENV.strip():
-        parts = [p.strip() for p in CLASS_LABELS_ENV.split(",") if p.strip()]
+def _labels_for(class_labels_env: str, n: int) -> list[str]:
+    if class_labels_env.strip():
+        parts = [p.strip() for p in class_labels_env.split(",") if p.strip()]
         if len(parts) == n:
             return parts
     return _default_labels(n)
@@ -150,13 +192,13 @@ def _preprocess(img: Image.Image, input_shape: tuple[Any, ...]) -> np.ndarray:
     return np.expand_dims(arr, axis=0)
 
 
-def _decode_probs(vec: np.ndarray) -> tuple[list[dict[str, float]], int, float]:
+def _decode_probs(vec: np.ndarray, class_labels_env: str) -> tuple[list[dict[str, float]], int, float]:
     v = np.asarray(vec, dtype=np.float64).reshape(-1)
 
     if v.size == 1:
         p_pos = float(np.clip(v[0], 0.0, 1.0))
         probs = np.array([1.0 - p_pos, p_pos], dtype=np.float64)
-        labels = _labels_for(2)
+        labels = _labels_for(class_labels_env, 2)
         items = [{"label": labels[i], "score": float(probs[i])} for i in range(2)]
         pred_i = int(np.argmax(probs))
         conf = float(np.max(probs))
@@ -170,7 +212,7 @@ def _decode_probs(vec: np.ndarray) -> tuple[list[dict[str, float]], int, float]:
         probs = v / s if s > 1e-9 else np.ones_like(v) / len(v)
 
     n = probs.size
-    labels = _labels_for(n)
+    labels = _labels_for(class_labels_env, n)
     if len(labels) != n:
         labels = _default_labels(n)
     items = [{"label": labels[i], "score": float(probs[i])} for i in range(n)]
@@ -179,25 +221,7 @@ def _decode_probs(vec: np.ndarray) -> tuple[list[dict[str, float]], int, float]:
     return items, pred_i, conf
 
 
-@app.get("/health")
-def health() -> dict[str, Any]:
-    _reload_model_if_unloaded()
-    return {
-        "ok": _model is not None,
-        "model_path": MODEL_PATH,
-        "error": _model_error,
-    }
-
-
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)) -> dict[str, Any]:
-    _reload_model_if_unloaded()
-    if _model is None:
-        raise HTTPException(
-            status_code=503,
-            detail=_model_error or "Model not loaded. Add best_alzheimers_model.keras to ml-service/models/",
-        )
-    raw = await file.read()
+def _run_predict(model: Any, raw: bytes, class_labels_env: str) -> dict[str, Any]:
     if not raw:
         raise HTTPException(status_code=400, detail="Empty file")
 
@@ -206,14 +230,14 @@ async def predict(file: UploadFile = File(...)) -> dict[str, Any]:
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=_api_error_detail(f"Invalid image: {e}")) from e
 
-    inp_shape = _model.input_shape
+    inp_shape = model.input_shape
     try:
         batch = _preprocess(img, inp_shape)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=_api_error_detail(e)) from e
 
     try:
-        out = _model.predict(batch, verbose=0)
+        out = model.predict(batch, verbose=0)
     except Exception as e:  # noqa: BLE001
         logger.exception("Keras predict() failed")
         raise HTTPException(
@@ -222,7 +246,7 @@ async def predict(file: UploadFile = File(...)) -> dict[str, Any]:
         ) from None
 
     vec = np.asarray(out[0] if hasattr(out, "__getitem__") else out).reshape(-1)
-    probabilities, predicted_index, confidence = _decode_probs(vec)
+    probabilities, predicted_index, confidence = _decode_probs(vec, class_labels_env)
     predicted_label = probabilities[predicted_index]["label"]
 
     return {
@@ -232,3 +256,43 @@ async def predict(file: UploadFile = File(...)) -> dict[str, Any]:
         "probabilities": probabilities,
         "input_shape": [int(x) for x in inp_shape if x is not None],
     }
+
+
+@app.get("/health")
+def health() -> dict[str, Any]:
+    _reload_model_if_unloaded()
+    _reload_mri_if_unloaded()
+    return {
+        "ok": _model is not None,
+        "model_path": MODEL_PATH,
+        "error": _model_error,
+        "mri": {
+            "ok": _model_mri is not None,
+            "model_path": MRI_MODEL_PATH,
+            "error": _model_mri_error,
+        },
+    }
+
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)) -> dict[str, Any]:
+    _reload_model_if_unloaded()
+    if _model is None:
+        raise HTTPException(
+            status_code=503,
+            detail=_model_error or "CWT model not loaded.",
+        )
+    raw = await file.read()
+    return _run_predict(_model, raw, CLASS_LABELS_ENV)
+
+
+@app.post("/predict/mri")
+async def predict_mri(file: UploadFile = File(...)) -> dict[str, Any]:
+    _reload_mri_if_unloaded()
+    if _model_mri is None:
+        raise HTTPException(
+            status_code=503,
+            detail=_model_mri_error or "MRI model not loaded. Add MRI.h5 under ml-service/models/.",
+        )
+    raw = await file.read()
+    return _run_predict(_model_mri, raw, MRI_CLASS_LABELS_ENV)

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Brain, CalendarDays, ClipboardList, Download, Loader2, Sparkles, Users } from "lucide-react";
+import { Brain, CalendarDays, ClipboardList, Download, Loader2, ScanLine, Sparkles, Users } from "lucide-react";
 import DashboardShell from "./DashboardShell";
 import { DashboardKpiStrip } from "./DashboardKpiStrip";
 import NotificationBell from "@/components/NotificationBell";
-import DoctorAIAlzheimerPanel from "./DoctorAIAlzheimerPanel";
+import DoctorScanPanel from "./DoctorScanPanel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -76,7 +76,7 @@ const DoctorDashboard = () => {
   const [rxSubmitting, setRxSubmitting] = useState(false);
 
   const [preselectRxPatient, setPreselectRxPatient] = useState<string | null>(null);
-  const [preselectAiImage, setPreselectAiImage] = useState<string | null>(null);
+  const [preselectCwtImage, setPreselectCwtImage] = useState<string | null>(null);
 
   const loadPatientNames = useCallback(async (ids: string[]) => {
     const uniq = [...new Set(ids.filter(Boolean))];
@@ -178,9 +178,13 @@ const DoctorDashboard = () => {
           title: "Prescriptions",
           subtitle: "Prescribe for patients with an accepted or completed visit.",
         },
-        ai: {
-          title: "AI Alzheimer’s analysis",
-          subtitle: "Run your trained model on scan images with confidence scores.",
+        cwt: {
+          title: "CWT scan analysis",
+          subtitle: "Upload CWT spectrogram images (STFT-based time–frequency maps) and run the classifier.",
+        },
+        mri: {
+          title: "MRI scan analysis",
+          subtitle: "Upload MRI slice images (PNG/JPG) for the dedicated MRI model (MRI.h5 on the server).",
         },
         patients: {
           title: "Patients",
@@ -268,9 +272,9 @@ const DoctorDashboard = () => {
     setActiveTab("prescriptions");
   };
 
-  const openAiFromAppointment = (a: AppointmentRow) => {
-    setPreselectAiImage(a.attachment_url?.startsWith("data:image") ? a.attachment_url : null);
-    setActiveTab("ai");
+  const openCwtFromAppointment = (a: AppointmentRow) => {
+    setPreselectCwtImage(a.attachment_url?.startsWith("data:image") ? a.attachment_url : null);
+    setActiveTab("cwt");
   };
 
   const activeMeta = tabCopy[activeTab as keyof typeof tabCopy] ?? tabCopy.appointments;
@@ -285,7 +289,8 @@ const DoctorDashboard = () => {
         items: [
           { id: "appointments", label: "Appointments", icon: <CalendarDays className="h-4 w-4 shrink-0 opacity-90" /> },
           { id: "prescriptions", label: "Prescriptions", icon: <ClipboardList className="h-4 w-4 shrink-0 opacity-90" /> },
-          { id: "ai", label: "AI scan", icon: <Brain className="h-4 w-4 shrink-0 opacity-90" /> },
+          { id: "cwt", label: "CWT scan", icon: <Brain className="h-4 w-4 shrink-0 opacity-90" /> },
+          { id: "mri", label: "MRI scan", icon: <ScanLine className="h-4 w-4 shrink-0 opacity-90" /> },
           { id: "patients", label: "Patients", icon: <Users className="h-4 w-4 shrink-0 opacity-90" /> },
         ],
         activeId: activeTab,
@@ -302,7 +307,8 @@ const DoctorDashboard = () => {
           <TabsList className="hidden">
             <TabsTrigger value="appointments" />
             <TabsTrigger value="prescriptions" />
-            <TabsTrigger value="ai" />
+            <TabsTrigger value="cwt" />
+            <TabsTrigger value="mri" />
             <TabsTrigger value="patients" />
           </TabsList>
 
@@ -350,8 +356,8 @@ const DoctorDashboard = () => {
                                 <Download className="h-3.5 w-3.5 mr-1" /> Download
                               </Button>
                               {a.attachment_url.startsWith("data:image") && (
-                                <Button type="button" size="sm" variant="secondary" onClick={() => openAiFromAppointment(a)}>
-                                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Run AI on this photo
+                                <Button type="button" size="sm" variant="secondary" onClick={() => openCwtFromAppointment(a)}>
+                                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Run CWT on this photo
                                 </Button>
                               )}
                             </div>
@@ -411,8 +417,8 @@ const DoctorDashboard = () => {
                                     <Download className="h-3.5 w-3.5 mr-1" /> Download
                                   </Button>
                                   {a.attachment_url?.startsWith("data:image") && (
-                                    <Button type="button" size="sm" variant="secondary" onClick={() => openAiFromAppointment(a)}>
-                                      <Sparkles className="h-3.5 w-3.5 mr-1" /> Run AI on visit photo
+                                    <Button type="button" size="sm" variant="secondary" onClick={() => openCwtFromAppointment(a)}>
+                                      <Sparkles className="h-3.5 w-3.5 mr-1" /> Run CWT on visit photo
                                     </Button>
                                   )}
                                 </div>
@@ -423,8 +429,8 @@ const DoctorDashboard = () => {
                             <Button size="sm" variant="secondary" onClick={() => goPrescribe(a.patient_id)}>
                               Prescribe
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => openAiFromAppointment(a)}>
-                              AI Alzheimer&apos;s
+                            <Button size="sm" variant="outline" onClick={() => openCwtFromAppointment(a)}>
+                              CWT scan
                             </Button>
                             <Button size="sm" onClick={() => void setApptStatus(a.id, "completed")}>
                               Mark completed
@@ -558,10 +564,25 @@ const DoctorDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="ai" className="mt-0">
-            <DoctorAIAlzheimerPanel
-              preselectImageDataUrl={preselectAiImage}
-              onConsumedPreselect={() => setPreselectAiImage(null)}
+          <TabsContent value="cwt" className="mt-0">
+            <DoctorScanPanel
+              fileInputId="cwt-scan-file"
+              cardTitle="CWT (STFT) Alzheimer&apos;s detection"
+              description="Upload a CWT spectrogram image derived from your signal (e.g. STFT-based time–frequency representation). The model expects this representation, not raw MRI."
+              predictPath="/predict"
+              preselectImageDataUrl={preselectCwtImage}
+              onConsumedPreselect={() => setPreselectCwtImage(null)}
+              runButtonLabel="Run CWT model"
+            />
+          </TabsContent>
+
+          <TabsContent value="mri" className="mt-0">
+            <DoctorScanPanel
+              fileInputId="mri-scan-file"
+              cardTitle="MRI scan classification"
+              description="Upload an MRI slice or processed MRI image (PNG/JPG). The server runs MRI.h5 on POST /predict/mri — separate from the CWT model."
+              predictPath="/predict/mri"
+              runButtonLabel="Run MRI model"
             />
           </TabsContent>
 
