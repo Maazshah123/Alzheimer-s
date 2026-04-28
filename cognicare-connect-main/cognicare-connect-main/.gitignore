@@ -22,6 +22,7 @@ ml-service/__pycache__
 
 ml-service/models/*.keras
 !ml-service/models/.gitkeep
+!ml-service/models/best_alzheimers_model.keras
 
 # Editor directories and files
 .vscode/*

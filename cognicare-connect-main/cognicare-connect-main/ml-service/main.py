@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from huggingface_hub import hf_hub_download
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,9 @@ MODEL_PATH = os.environ.get(
     str(Path(__file__).resolve().parent / "models" / "best_alzheimers_model.keras"),
 )
 CLASS_LABELS_ENV = os.environ.get("CLASS_LABELS", "")
+HF_REPO_ID = os.environ.get("HF_REPO_ID", "")
+HF_FILENAME = os.environ.get("HF_FILENAME", "best_alzheimers_model.keras")
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
 app = FastAPI(title="CogniPredict ML", version="1.0.0")
 app.add_middleware(
@@ -43,8 +47,27 @@ _model_error: str | None = None
 def _load_model() -> None:
     global _model, _model_error
     path = Path(MODEL_PATH)
+    if not path.is_file() and HF_REPO_ID.strip():
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            downloaded = hf_hub_download(
+                repo_id=HF_REPO_ID.strip(),
+                filename=HF_FILENAME,
+                token=HF_TOKEN or None,
+            )
+            path = Path(downloaded)
+            logger.info("Downloaded model from Hugging Face: %s/%s", HF_REPO_ID, HF_FILENAME)
+        except Exception as e:  # noqa: BLE001
+            _model_error = _api_error_detail(
+                f"Model download failed from Hugging Face repo '{HF_REPO_ID}' file '{HF_FILENAME}': {e}"
+            )
+            return
+
     if not path.is_file():
-        _model_error = f"Model file not found at {path}. Copy best_alzheimers_model.keras into ml-service/models/."
+        _model_error = (
+            f"Model file not found at {path}. Set HF_REPO_ID/HF_FILENAME to download from Hugging Face, "
+            "or copy best_alzheimers_model.keras into ml-service/models/."
+        )
         return
     try:
         import tensorflow as tf
