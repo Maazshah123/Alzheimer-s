@@ -27,7 +27,31 @@ type PredictResponse = {
   probabilities: ProbRow[];
 };
 
-const BAR_COLORS = ["#9B51E0", "#6FCF97", "#B794F4", "#52D1A4", "#7C3AED"];
+const labelTone = (label: string) => {
+  const t = label.toLowerCase();
+  if (t.includes("cognitive normal") || t === "cn") {
+    return {
+      bar: "#22c55e",
+      badge: "bg-green-100 text-green-800 border-green-200",
+    };
+  }
+  if (t.includes("frontotemporal") || t === "ftd") {
+    return {
+      bar: "#f59e0b",
+      badge: "bg-amber-100 text-amber-800 border-amber-200",
+    };
+  }
+  if (t.includes("alz")) {
+    return {
+      bar: "#ef4444",
+      badge: "bg-red-100 text-red-800 border-red-200",
+    };
+  }
+  return {
+    bar: "#9B51E0",
+    badge: "bg-violet-100 text-violet-800 border-violet-200",
+  };
+};
 
 const MAX_ERR_CHARS = 280;
 const clipErr = (s: string) => {
@@ -184,6 +208,7 @@ const DoctorAIAlzheimerPanel = ({ preselectImageDataUrl, onConsumedPreselect }: 
         name: p.label.length > 18 ? `${p.label.slice(0, 16)}…` : p.label,
         fullName: p.label,
         score: Math.round(p.score * 1000) / 10,
+        color: labelTone(p.label).bar,
       })) ?? [],
     [result],
   );
@@ -220,7 +245,14 @@ const DoctorAIAlzheimerPanel = ({ preselectImageDataUrl, onConsumedPreselect }: 
             <div className="flex flex-wrap items-end gap-6">
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Model result</p>
-                <p className="text-2xl font-semibold text-gray-900">{result.predicted_label}</p>
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  <p className="text-lg font-semibold text-gray-900">Result:</p>
+                  <span
+                    className={`inline-flex items-center rounded-md border px-3 py-1 text-sm font-semibold ${labelTone(result.predicted_label).badge}`}
+                  >
+                    {result.predicted_label}
+                  </span>
+                </div>
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Confidence (this class)</p>
@@ -237,8 +269,8 @@ const DoctorAIAlzheimerPanel = ({ preselectImageDataUrl, onConsumedPreselect }: 
                   <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} width={48} />
                   <Tooltip formatter={(v: number) => [`${v}%`, "Score"]} labelFormatter={(_, p) => p?.[0]?.payload?.fullName ?? ""} />
                   <Bar dataKey="score" radius={[6, 6, 0, 0]}>
-                    {chartData.map((_, i) => (
-                      <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
+                    {chartData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
                     ))}
                   </Bar>
                 </BarChart>

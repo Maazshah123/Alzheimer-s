@@ -94,6 +94,8 @@ def _default_labels(n: int) -> list[str]:
         return ["Positive (Alzheimer's risk)"]
     if n == 2:
         return ["No Alzheimer's", "Alzheimer's"]
+    if n == 3:
+        return ["Cognitive normal", "Frontotemporal dementia", "Alzheimers"]
     return [f"Class {i}" for i in range(n)]
 
 
