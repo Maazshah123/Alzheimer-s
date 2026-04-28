@@ -35,7 +35,7 @@ const features = [
   {
     icon: Shield,
     title: "End-to-End Encryption",
-    desc: "Zero-trust architecture, HIPAA & GDPR aligned. Your data is yours — visible only to who you choose.",
+    desc: "Your data is protected, your privacy is our priority, and your information remains confidential.",
     accent: "from-primary-deep to-primary",
   },
 ];

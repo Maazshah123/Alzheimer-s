@@ -124,17 +124,6 @@ const DashboardShell = ({ title, subtitle, badge, headerExtra, children, workspa
                 </Button>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 mt-5">
-              <span className="inline-flex items-center rounded-md h-9 px-4 text-sm bg-[#E8EAEC] text-gray-700">
-                Date range
-              </span>
-              <span className="inline-flex items-center rounded-md h-9 px-4 text-sm bg-[#E8EAEC] text-gray-700">
-                Departments
-              </span>
-              <span className="inline-flex items-center rounded-md h-9 px-4 text-sm bg-[#E8EAEC] text-gray-700">
-                Specializations
-              </span>
-            </div>
           </header>
           <main className="flex-1 px-4 sm:px-6 lg:px-10 py-6 lg:py-8">{children}</main>
           <div className="md:hidden border-t border-black/5 bg-white p-4 flex flex-col gap-2">

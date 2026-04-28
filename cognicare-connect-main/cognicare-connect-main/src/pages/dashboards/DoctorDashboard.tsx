@@ -306,16 +306,16 @@ const DoctorDashboard = () => {
             <TabsTrigger value="patients" />
           </TabsList>
 
-          <DashboardKpiStrip
-            items={[
-              { label: "Pending requests", value: pendingAppointments.length },
-              { label: "Accepted visits", value: acceptedAppointments.length },
-              { label: "Prescriptions", value: prescriptions.length },
-              { label: "Patients", value: uniquePatientCount },
-            ]}
-          />
+          <TabsContent value="appointments" forceMount className="mt-0 space-y-8">
+            <DashboardKpiStrip
+              items={[
+                { label: "Pending requests", value: pendingAppointments.length },
+                { label: "Accepted visits", value: acceptedAppointments.length },
+                { label: "Prescriptions", value: prescriptions.length },
+                { label: "Patients", value: uniquePatientCount },
+              ]}
+            />
 
-          <TabsContent value="appointments" className="mt-0 space-y-8">
             <Card className="rounded-xl border border-amber-200/80 bg-[#F0F2F4] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-gray-900 font-bold border-b border-gray-200/90 pb-3">Pending requests</CardTitle>
@@ -485,7 +485,7 @@ const DoctorDashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="prescriptions" className="mt-0 space-y-6">
+          <TabsContent value="prescriptions" forceMount className="mt-0 space-y-6">
             <Card className="rounded-xl border-0 bg-[#F0F2F4] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-gray-900 font-bold border-b border-gray-200/90 pb-3">New prescription</CardTitle>
@@ -558,14 +558,14 @@ const DoctorDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="ai" className="mt-0">
+          <TabsContent value="ai" forceMount className="mt-0">
             <DoctorAIAlzheimerPanel
               preselectImageDataUrl={preselectAiImage}
               onConsumedPreselect={() => setPreselectAiImage(null)}
             />
           </TabsContent>
 
-          <TabsContent value="patients" className="mt-0">
+          <TabsContent value="patients" forceMount className="mt-0">
             <Card className="rounded-xl border-0 bg-[#F0F2F4] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-gray-900 font-bold border-b border-gray-200/90 pb-3">Patients on your schedule</CardTitle>

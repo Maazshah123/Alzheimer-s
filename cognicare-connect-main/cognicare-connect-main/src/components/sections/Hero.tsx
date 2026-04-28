@@ -56,7 +56,7 @@ const Hero = () => {
               className="inline-flex items-center gap-2 rounded-full glass px-4 py-2 text-xs font-medium text-primary-deep mb-6 shadow-soft"
             >
               <Sparkles className="h-3.5 w-3.5 text-primary" />
-              AR · VR · AI-Powered Cognitive Health
+              AI-Powered Cognitive Health
             </motion.div>
 
             <motion.h1
@@ -75,7 +75,7 @@ const Hero = () => {
               transition={{ duration: 0.9, delay: 0.3 }}
               className="mt-7 text-lg lg:text-xl text-muted-foreground max-w-xl leading-relaxed"
             >
-              CogniPredict fuses immersive 3D visualisation with clinical-grade AI to
+              CogniPredict fuses clinical-grade AI to
               help doctors detect cognitive decline earlier — and helps patients live
               with calm, clarity and confidence.
             </motion.p>
@@ -90,9 +90,6 @@ const Hero = () => {
                 Get Started Free
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
-              <Button variant="glass" size="xl">
-                Watch Demo
-              </Button>
             </motion.div>
 
             <motion.div
@@ -102,7 +99,7 @@ const Hero = () => {
               className="mt-12 flex items-center gap-8 text-sm text-muted-foreground"
             >
               <div>
-                <div className="text-2xl font-display font-semibold text-foreground">98.4%</div>
+                <div className="text-2xl font-display font-semibold text-foreground">98.6%</div>
                 <div>Prediction accuracy</div>
               </div>
               <div className="h-10 w-px bg-border" />
@@ -112,7 +109,7 @@ const Hero = () => {
               </div>
               <div className="h-10 w-px bg-border hidden sm:block" />
               <div className="hidden sm:block">
-                <div className="text-2xl font-display font-semibold text-foreground">HIPAA</div>
+                <div className="text-2xl font-display font-semibold text-foreground">Protection</div>
                 <div>End-to-end encrypted</div>
               </div>
             </motion.div>
@@ -144,7 +141,7 @@ const Hero = () => {
             </div>
             <div className="absolute bottom-6 right-6 glass rounded-2xl px-4 py-3 shadow-soft">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">AI Confidence</div>
-              <div className="font-display text-lg text-primary">98.4%</div>
+              <div className="font-display text-lg text-primary">98.6%</div>
             </div>
           </motion.div>
         </div>
