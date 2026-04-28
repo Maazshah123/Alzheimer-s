@@ -194,10 +194,10 @@ const AdminDashboard = () => {
               <TabsTrigger value="doctor" />
               <TabsTrigger value="patient" />
             </TabsList>
-            <TabsContent value="doctor" forceMount className="mt-4">
+            <TabsContent value="doctor" className="mt-4">
               <ApprovalList rows={activeUsers} loading={loading} busyId={busyId} onApprove={updateStatus} onReject={updateStatus} onDelete={deleteUser} />
             </TabsContent>
-            <TabsContent value="patient" forceMount className="mt-4">
+            <TabsContent value="patient" className="mt-4">
               <ApprovalList rows={activeUsers} loading={loading} busyId={busyId} onApprove={updateStatus} onReject={updateStatus} onDelete={deleteUser} />
             </TabsContent>
           </Tabs>

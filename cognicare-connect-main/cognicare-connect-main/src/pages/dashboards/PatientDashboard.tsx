@@ -373,16 +373,16 @@ const PatientDashboard = () => {
             <TabsTrigger value="prescriptions" />
           </TabsList>
 
-          <DashboardKpiStrip
-            items={[
-              { label: "Medical records", value: records.length },
-              { label: "Appointments", value: appointments.length },
-              { label: "Prescriptions", value: prescriptions.length },
-              { label: "Care team", value: myDoctors.length },
-            ]}
-          />
+          <TabsContent value="overview" className="mt-0 space-y-8">
+            <DashboardKpiStrip
+              items={[
+                { label: "Medical records", value: records.length },
+                { label: "Appointments", value: appointments.length },
+                { label: "Prescriptions", value: prescriptions.length },
+                { label: "Care team", value: myDoctors.length },
+              ]}
+            />
 
-          <TabsContent value="overview" forceMount className="mt-0 space-y-8">
             <Card className="rounded-xl border-0 bg-[#F0F2F4] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-gray-900 font-bold border-b border-gray-200/90 pb-3">Your profile</CardTitle>
@@ -459,7 +459,7 @@ const PatientDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="records" forceMount className="mt-0 space-y-8">
+          <TabsContent value="records" className="mt-0 space-y-8">
             <Card className="rounded-xl border-0 bg-[#F0F2F4] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-gray-900 font-bold border-b border-gray-200/90 pb-3">Add a record</CardTitle>
@@ -533,7 +533,7 @@ const PatientDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="appointments" forceMount className="mt-0 space-y-8">
+          <TabsContent value="appointments" className="mt-0 space-y-8">
             <Card className="rounded-xl border-0 bg-[#F0F2F4] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-gray-900 font-bold border-b border-gray-200/90 pb-3">Book with a doctor</CardTitle>
@@ -644,7 +644,7 @@ const PatientDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="prescriptions" forceMount className="mt-0">
+          <TabsContent value="prescriptions" className="mt-0">
             <Card className="rounded-xl border-0 bg-[#F0F2F4] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-gray-900 font-bold border-b border-gray-200/90 pb-3">Prescriptions & reminders</CardTitle>

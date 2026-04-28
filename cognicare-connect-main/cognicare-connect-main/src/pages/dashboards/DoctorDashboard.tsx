@@ -306,7 +306,7 @@ const DoctorDashboard = () => {
             <TabsTrigger value="patients" />
           </TabsList>
 
-          <TabsContent value="appointments" forceMount className="mt-0 space-y-8">
+          <TabsContent value="appointments" className="mt-0 space-y-8">
             <DashboardKpiStrip
               items={[
                 { label: "Pending requests", value: pendingAppointments.length },
@@ -485,7 +485,7 @@ const DoctorDashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="prescriptions" forceMount className="mt-0 space-y-6">
+          <TabsContent value="prescriptions" className="mt-0 space-y-6">
             <Card className="rounded-xl border-0 bg-[#F0F2F4] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-gray-900 font-bold border-b border-gray-200/90 pb-3">New prescription</CardTitle>
@@ -558,14 +558,14 @@ const DoctorDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="ai" forceMount className="mt-0">
+          <TabsContent value="ai" className="mt-0">
             <DoctorAIAlzheimerPanel
               preselectImageDataUrl={preselectAiImage}
               onConsumedPreselect={() => setPreselectAiImage(null)}
             />
           </TabsContent>
 
-          <TabsContent value="patients" forceMount className="mt-0">
+          <TabsContent value="patients" className="mt-0">
             <Card className="rounded-xl border-0 bg-[#F0F2F4] shadow-sm">
               <CardHeader>
                 <CardTitle className="text-gray-900 font-bold border-b border-gray-200/90 pb-3">Patients on your schedule</CardTitle>
