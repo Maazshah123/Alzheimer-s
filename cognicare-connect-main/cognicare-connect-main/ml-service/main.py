@@ -89,16 +89,25 @@ def _load_one_model(
             tf.config.set_visible_devices([], "GPU")
         except Exception:
             pass
-        m = tf.keras.models.load_model(path, compile=False)
+        try:
+            m = tf.keras.models.load_model(path, compile=False, safe_mode=False)
+        except TypeError:
+            m = tf.keras.models.load_model(path, compile=False)
         return m, None
     except Exception as e:  # noqa: BLE001
         logger.exception("Model load failed for %s", path)
         raw = str(e)
         low = raw.lower()
-        if "quantization_config" in low or "unrecognized keyword" in low:
+        if (
+            "quantization_config" in low
+            or "unrecognized keyword" in low
+            or "deserializing" in low
+            or "separableconv2d" in low
+        ):
             raw = (
-                "This model needs a newer TensorFlow (try: pip install -U 'tensorflow>=2.17'). "
-                f"Detail: {raw[:200]}"
+                "TensorFlow/Keras on the server is older or different than the version used to save this file. "
+                "Redeploy with tensorflow>=2.18 in requirements.txt, or re-save the model with the same TF version as production. "
+                f"Detail: {raw[:220]}"
             )
         return None, _api_error_detail(raw)
 
