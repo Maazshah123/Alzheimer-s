@@ -98,11 +98,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let deferredRoleLoad: ReturnType<typeof setTimeout> | null = null;
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       if (deferredRoleLoad) {
         clearTimeout(deferredRoleLoad);
         deferredRoleLoad = null;
       }
+
+      if (event === "TOKEN_REFRESHED" && s?.user) {
+        setSession(s);
+        setUser(s.user);
+        return;
+      }
+
       setSession(s);
       setUser(s?.user ?? null);
       if (!s?.user) {

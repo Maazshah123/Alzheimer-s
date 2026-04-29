@@ -89,11 +89,11 @@ def _load_one_model(
             tf.config.set_visible_devices([], "GPU")
         except Exception:
             pass
-        try:
-            m = tf.keras.models.load_model(path, compile=False, safe_mode=False)
-        except TypeError:
-            m = tf.keras.models.load_model(path, compile=False)
-        return m, None
+
+        m, err = _try_load_keras_file(path)
+        if m is not None:
+            return m, None
+        raise RuntimeError(err or "Unknown load failure")
     except Exception as e:  # noqa: BLE001
         logger.exception("Model load failed for %s", path)
         raw = str(e)
@@ -105,11 +105,51 @@ def _load_one_model(
             or "separableconv2d" in low
         ):
             raw = (
-                "TensorFlow/Keras on the server is older or different than the version used to save this file. "
-                "Redeploy with tensorflow>=2.18 in requirements.txt, or re-save the model with the same TF version as production. "
+                "HDF5/Keras version mismatch. This build tries tf.keras then tf-keras (Keras 2) for .h5 files. "
+                "If it still fails, re-save the model in your training env: model.save('MRI.keras') with the same TF as here, "
+                "or export SavedModel. "
                 f"Detail: {raw[:220]}"
             )
         return None, _api_error_detail(raw)
+
+
+def _try_load_keras_file(path: Path) -> tuple[Any | None, str | None]:
+    """Try Keras 3 loaders first; many legacy .h5 files need tf_keras (Keras 2 API)."""
+    import tensorflow as tf
+
+    p = str(path)
+    attempts: list[tuple[str, Any]] = []
+
+    def add(name: str, fn: Any) -> None:
+        attempts.append((name, fn))
+
+    add(
+        "tf.keras safe_mode=False",
+        lambda: tf.keras.models.load_model(p, compile=False, safe_mode=False),
+    )
+    add("tf.keras", lambda: tf.keras.models.load_model(p, compile=False))
+
+    if path.suffix.lower() == ".h5":
+        def load_tf_keras() -> Any:
+            import tf_keras as keras2
+
+            return keras2.models.load_model(p, compile=False)
+
+        add("tf_keras (Keras2 .h5)", load_tf_keras)
+
+    errs: list[str] = []
+    for name, fn in attempts:
+        try:
+            return fn(), None
+        except TypeError as e:
+            if "safe_mode" in str(e):
+                errs.append(f"{name}: {e}")
+                continue
+            errs.append(f"{name}: {e}")
+        except Exception as e:  # noqa: BLE001
+            errs.append(f"{name}: {e}")
+
+    return None, " | ".join(errs) if errs else None
 
 
 def _load_model() -> None:
