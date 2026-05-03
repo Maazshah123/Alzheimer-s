@@ -6,6 +6,9 @@ export type AppRole = "admin" | "doctor" | "patient";
 export type DoctorStatus = "pending" | "approved" | "rejected" | "suspended";
 export type PatientStatus = "pending" | "approved" | "rejected" | "suspended";
 
+const parseAppRole = (v: unknown): AppRole | null =>
+  v === "admin" || v === "doctor" || v === "patient" ? v : null;
+
 interface AuthState {
   user: User | null;
   session: Session | null;
@@ -32,13 +35,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [patientStatus, setPatientStatus] = useState<PatientStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadRoleAndStatus = useCallback(async (uid: string): Promise<AppRole | null> => {
+  const loadRoleAndStatus = useCallback(async (uid: string, authUser?: User | null): Promise<AppRole | null> => {
     const { data: roleRow } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", uid)
       .maybeSingle();
-    const r = (roleRow?.role as AppRole | undefined) ?? null;
+    // Prefer table row; if RLS hides it (empty result) fall back to signup metadata — same source of truth as triggers.
+    const fromDb = (roleRow?.role as AppRole | undefined) ?? null;
+    const r = fromDb ?? parseAppRole(authUser?.user_metadata?.role);
     setRole(r);
 
     if (r === "doctor") {
@@ -82,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setLoading(true);
       try {
-        return await loadRoleAndStatus(uid);
+        return await loadRoleAndStatus(uid, s?.user ?? null);
       } catch {
         setRole(null);
         setDoctorStatus(null);
@@ -125,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         deferredRoleLoad = null;
         void (async () => {
           try {
-            await loadRoleAndStatus(s.user.id);
+            await loadRoleAndStatus(s.user.id, s.user);
           } finally {
             setLoading(false);
           }
@@ -136,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) await loadRoleAndStatus(s.user.id);
+      if (s?.user) await loadRoleAndStatus(s.user.id, s.user);
       setLoading(false);
     });
 
