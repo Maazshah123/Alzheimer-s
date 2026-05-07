@@ -30,10 +30,34 @@ type PredictResponse = {
 
 const labelTone = (label: string) => {
   const t = label.toLowerCase();
-  if (t.includes("cognitive normal") || t === "cn") {
+  if (t.includes("cognitive normal") || t === "cn" || t.includes("nondemented")) {
     return {
       bar: "#22c55e",
       badge: "bg-green-100 text-green-800 border-green-200",
+    };
+  }
+  if (t.includes("verymild") || t.includes("very mild")) {
+    return {
+      bar: "#84cc16",
+      badge: "bg-lime-100 text-lime-900 border-lime-200",
+    };
+  }
+  if (t.includes("milddemented") || t.includes("mild demented") || (t.includes("mild") && t.includes("dement"))) {
+    return {
+      bar: "#f59e0b",
+      badge: "bg-amber-100 text-amber-800 border-amber-200",
+    };
+  }
+  if (t.includes("moderatedemented") || t.includes("moderate demented") || (t.includes("moderate") && t.includes("dement"))) {
+    return {
+      bar: "#f97316",
+      badge: "bg-orange-100 text-orange-900 border-orange-200",
+    };
+  }
+  if (t.includes("severedemented") || t.includes("severe demented")) {
+    return {
+      bar: "#ef4444",
+      badge: "bg-red-100 text-red-800 border-red-200",
     };
   }
   if (t.includes("frontotemporal") || t === "ftd") {

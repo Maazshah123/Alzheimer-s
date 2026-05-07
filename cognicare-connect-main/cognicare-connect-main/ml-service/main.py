@@ -37,7 +37,11 @@ MRI_MODEL_PATH = os.environ.get(
     "MRI_MODEL_PATH",
     str(Path(__file__).resolve().parent / "models" / "MRI.h5"),
 )
-MRI_CLASS_LABELS_ENV = os.environ.get("MRI_CLASS_LABELS", "")
+# Default order = output index 0..3 for the shipped MRI.h5; set MRI_CLASS_LABELS to override or add a 5th name.
+MRI_CLASS_LABELS_ENV = os.environ.get(
+    "MRI_CLASS_LABELS",
+    "ModerateDemented,NonDemented,VeryMildDemented,MildDemented",
+)
 HF_REPO_ID_MRI = os.environ.get("HF_REPO_ID_MRI", "")
 HF_FILENAME_MRI = os.environ.get("HF_FILENAME_MRI", "MRI.h5")
 
@@ -216,8 +220,10 @@ def _default_labels(n: int) -> list[str]:
 def _labels_for(class_labels_env: str, n: int) -> list[str]:
     if class_labels_env.strip():
         parts = [p.strip() for p in class_labels_env.split(",") if p.strip()]
-        if len(parts) == n:
-            return parts
+        if len(parts) >= n:
+            return parts[:n]
+        if len(parts) > 0:
+            return parts + [f"Class {i}" for i in range(len(parts), n)]
     return _default_labels(n)
 
 
@@ -262,8 +268,6 @@ def _decode_probs(vec: np.ndarray, class_labels_env: str) -> tuple[list[dict[str
 
     n = probs.size
     labels = _labels_for(class_labels_env, n)
-    if len(labels) != n:
-        labels = _default_labels(n)
     items = [{"label": labels[i], "score": float(probs[i])} for i in range(n)]
     pred_i = int(np.argmax(probs))
     conf = float(probs[pred_i])
