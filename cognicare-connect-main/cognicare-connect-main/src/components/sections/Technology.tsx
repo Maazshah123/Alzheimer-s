@@ -1,12 +1,27 @@
 import { motion } from "framer-motion";
-import { Cpu, Cloud, Lock, Network, Database, Layers } from "lucide-react";
+import { Cpu, Cloud, Database, Brain, Package, Layers } from "lucide-react";
 
 const stack = [
   { icon: Cpu, title: "AI & Machine Learning", desc: "Federated deep-learning models for cognitive pattern detection.", tag: "Core" },
   { icon: Cloud, title: "Elastic Cloud Infrastructure", desc: "Global edge regions ensure sub-50ms response anywhere on Earth.", tag: "Scale" },
-  { icon: Lock, title: "Zero-trust Encryption", desc: "AES-256 at rest, TLS 1.3 in transit. Patient keys never leave the device.", tag: "Security" },
-  { icon: Network, title: "AR / VR Visualisation", desc: "WebXR-ready 3D brain mapping for immersive consultations.", tag: "Immersive" },
-  { icon: Database, title: "FHIR-compliant Data", desc: "Interoperable with hospital EHR systems out of the box.", tag: "Standards" },
+  {
+    icon: Database,
+    title: "Supabase platform",
+    desc: "We use Supabase for Auth, Postgres, Row Level Security, and realtime updates — a single managed backend for profiles, roles, and clinical data.",
+    tag: "Backend",
+  },
+  {
+    icon: Brain,
+    title: "CWT & MRI in CogniPredict",
+    desc: "Dedicated flows for CWT spectrogram and MRI image classification support doctors in the same workspace as appointments, records, and prescriptions.",
+    tag: "Product",
+  },
+  {
+    icon: Package,
+    title: "Dockerfile for the ML API",
+    desc: "The FastAPI + TensorFlow service is containerised with a Dockerfile so the CWT and MRI models deploy the same way locally, on Railway, or any host.",
+    tag: "DevOps",
+  },
   { icon: Layers, title: "Privacy by Design", desc: "Differential privacy and on-device inference where it counts.", tag: "Ethical" },
 ];
 

@@ -3,22 +3,22 @@ import { Heart, Smile, Users, Sparkles } from "lucide-react";
 
 const benefits = [
   {
-    icon: Smile,
-    stat: "+47%",
+    icon: Heart,
+    stat: "97%",
     label: "Daily wellbeing",
     title: "Calmer days for patients",
     desc: "A soothing palette, gentle motion and predictable layouts reduce anxiety and confusion — so patients can focus on what matters.",
   },
   {
-    icon: Heart,
-    stat: "−62%",
+    icon: Users,
+    stat: "Shared",
     label: "Caregiver stress",
     title: "Lighter load for caregivers",
     desc: "Real-time vitals, automated reminders and shared notes mean caregivers stop juggling — and start being present.",
   },
   {
-    icon: Users,
-    stat: "3.2x",
+    icon: Smile,
+    stat: "Earlier",
     label: "Earlier intervention",
     title: "Better outcomes for families",
     desc: "Early prediction means earlier care plans, more time with loved ones, and the dignity of preparation.",

@@ -102,7 +102,7 @@ const Hero = () => {
               className="mt-12 flex items-center gap-8 text-sm text-muted-foreground"
             >
               <div>
-                <div className="text-2xl font-display font-semibold text-foreground">98.6%</div>
+                <div className="text-2xl font-display font-semibold text-foreground">97%</div>
                 <div>Prediction accuracy</div>
               </div>
               <div className="h-10 w-px bg-border" />
@@ -144,7 +144,7 @@ const Hero = () => {
             </div>
             <div className="absolute bottom-6 right-6 glass rounded-2xl px-4 py-3 shadow-soft">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">AI Confidence</div>
-              <div className="font-display text-lg text-primary">98.6%</div>
+              <div className="font-display text-lg text-primary">97%</div>
             </div>
           </motion.div>
         </div>
