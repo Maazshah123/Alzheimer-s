@@ -11,7 +11,9 @@ const ProtectedRoute = ({ children, allow }: Props) => {
   const { user, role, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  const canAccess = Boolean(user && role && allow.includes(role));
+  // Only block the shell on the initial auth resolution — not on background session refresh (avoids wiping dashboard state).
+  if (loading && !canAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

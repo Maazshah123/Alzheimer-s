@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -86,9 +87,11 @@ const Hero = () => {
               transition={{ duration: 0.9, delay: 0.5 }}
               className="mt-10 flex flex-wrap items-center gap-4"
             >
-              <Button variant="hero" size="xl" className="group">
-                Get Started Free
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              <Button variant="hero" size="xl" className="group" asChild>
+                <Link to="/signup">
+                  Get Started Free
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Link>
               </Button>
             </motion.div>
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,6 +34,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [doctorStatus, setDoctorStatus] = useState<DoctorStatus | null>(null);
   const [patientStatus, setPatientStatus] = useState<PatientStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  /** After we've resolved this user once, duplicate session events (tab refocus) must not flip `loading` or ProtectedRoute will unmount dashboards. */
+  const resolvedSessionUserIdRef = useRef<string | null>(null);
 
   const loadRoleAndStatus = useCallback(async (uid: string, authUser?: User | null): Promise<AppRole | null> => {
     const { data: roleRow } = await supabase
@@ -80,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(s?.user ?? null);
       const uid = explicitUserId ?? s?.user?.id ?? null;
       if (!uid) {
+        resolvedSessionUserIdRef.current = null;
         setRole(null);
         setDoctorStatus(null);
         setPatientStatus(null);
@@ -87,8 +90,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setLoading(true);
       try {
-        return await loadRoleAndStatus(uid, s?.user ?? null);
+        const r = await loadRoleAndStatus(uid, s?.user ?? null);
+        resolvedSessionUserIdRef.current = uid;
+        return r;
       } catch {
+        resolvedSessionUserIdRef.current = null;
         setRole(null);
         setDoctorStatus(null);
         setPatientStatus(null);
@@ -118,12 +124,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (!s?.user) {
+        resolvedSessionUserIdRef.current = null;
         setRole(null);
         setDoctorStatus(null);
         setPatientStatus(null);
         setLoading(false);
         return;
       }
+
+      // Same account re-hydrated (common when returning to the tab) — keep UI mounted; do not set `loading`.
+      if (resolvedSessionUserIdRef.current === s.user.id) {
+        setSession(s);
+        setUser(s.user);
+        return;
+      }
+
       // Never await Supabase inside this callback — it deadlocks other client calls (e.g. login `refresh`).
       setLoading(true);
       deferredRoleLoad = setTimeout(() => {
@@ -131,6 +146,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         void (async () => {
           try {
             await loadRoleAndStatus(s.user.id, s.user);
+            resolvedSessionUserIdRef.current = s.user.id;
           } finally {
             setLoading(false);
           }
@@ -141,7 +157,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) await loadRoleAndStatus(s.user.id, s.user);
+      if (s?.user) {
+        await loadRoleAndStatus(s.user.id, s.user);
+        resolvedSessionUserIdRef.current = s.user.id;
+      } else {
+        resolvedSessionUserIdRef.current = null;
+      }
       setLoading(false);
     });
 
@@ -152,6 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [loadRoleAndStatus]);
 
   const signOut = async () => {
+    resolvedSessionUserIdRef.current = null;
     await supabase.auth.signOut();
     setRole(null);
     setDoctorStatus(null);
